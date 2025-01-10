@@ -1,5 +1,14 @@
 "use client"
 
+
+
+import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Menu } from 'lucide-react'
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { useState, useEffect } from 'react'
+
 declare global {
   interface Window {
     ethereum?: {
@@ -9,14 +18,6 @@ declare global {
     };
   }
 }
-
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, Wallet } from 'lucide-react'
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { useState, useEffect } from 'react'
-
 const Button = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -246,7 +247,6 @@ export function Navbar() {
             className="hidden sm:inline-flex items-center space-x-2"
             disabled={isConnecting}
           >
-            <Wallet className="h-4 w-4" />
             <span>
               {isConnecting 
                 ? "Connecting..." 
@@ -286,7 +286,6 @@ export function Navbar() {
                 onClick={walletAddress ? disconnectWallet : connectWallet}
               >
                 <div className="flex items-center space-x-2">
-                  <Wallet className="h-4 w-4" />
                   <span>
                     {walletAddress ? "Disconnect Wallet" : "Connect Wallet"}
                   </span>
