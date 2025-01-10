@@ -23,9 +23,7 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Here you would typically send the form data to your backend
     console.log('Form submitted:', formData)
-    // For now, we'll just log the data to the console
   }
 
   return (
