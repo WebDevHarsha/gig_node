@@ -1,23 +1,29 @@
 "use client"
 
+interface EthereumRequest {
+  method: string;
+  params?: unknown[];
+}
 
+interface WindowWithEthereum {
+  ethereum?: {
+    request: (args: EthereumRequest) => Promise<unknown>;
+    on: (event: string, handler: (...args: any[]) => void) => void;
+    removeListener: (event: string, handler: (...args: any[]) => void) => void;
+  };
+}
+
+declare global {
+  interface Window extends WindowWithEthereum {}
+}
 
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu } from 'lucide-react'
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: any[] }) => Promise<any>;
-      on: (event: string, handler: (...args: any[]) => void) => void;
-      removeListener: (event: string, handler: (...args: any[]) => void) => void;
-    };
-  }
-}
 const Button = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -94,24 +100,37 @@ export function Navbar() {
   const [balance, setBalance] = useState("")
   const [chainId, setChainId] = useState("")
 
-  useEffect(() => {
-    // Check if wallet is already connected
-    checkWalletConnection()
-    // Listen for network changes
-    if (window.ethereum) {
-      window.ethereum.on('chainChanged', handleChainChanged)
-    }
-    return () => {
-      if (window.ethereum) {
-        window.ethereum.removeListener('chainChanged', handleChainChanged)
+  const updateWalletInfo = useCallback(async (address: string) => {
+    try {
+      if (!window.ethereum) {
+        throw new Error("Ethereum object not found");
       }
+      const balance = await window.ethereum.request({
+        method: 'eth_getBalance',
+        params: [address, 'latest']
+      }) as string
+      
+      const ethBalance = parseInt(balance) / 1e18
+      setBalance(ethBalance.toFixed(4))
+
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' }) as string
+      setChainId(chainId)
+    } catch (err) {
+      console.error("Error updating wallet info:", err)
     }
   }, [])
 
-  const checkWalletConnection = async () => {
+  const handleChainChanged = useCallback(async (newChain: string) => {
+    setChainId(newChain)
+    if (walletAddress) {
+      await updateWalletInfo(walletAddress)
+    }
+  }, [walletAddress, updateWalletInfo])
+
+  const checkWalletConnection = useCallback(async () => {
     if (typeof window.ethereum !== "undefined") {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[]
         if (accounts.length > 0) {
           setWalletAddress(accounts[0])
           await updateWalletInfo(accounts[0])
@@ -120,35 +139,21 @@ export function Navbar() {
         console.error("Error checking wallet connection:", err)
       }
     }
-  }
+  }, [updateWalletInfo])
 
-  const handleChainChanged = async (newChain: string) => {
-    setChainId(newChain)
-    if (walletAddress) {
-      await updateWalletInfo(walletAddress)
+  useEffect(() => {
+    checkWalletConnection()
+    
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', handleChainChanged)
     }
-  }
-
-  const updateWalletInfo = async (address: string) => {
-    try {
-      // Get balance
-      if (!window.ethereum) {
-        throw new Error("Ethereum object not found");
+    
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('chainChanged', handleChainChanged)
       }
-      const balance = await window.ethereum.request({
-        method: 'eth_getBalance',
-        params: [address, 'latest']
-      })
-      const ethBalance = parseInt(balance) / 1e18
-      setBalance(ethBalance.toFixed(4))
-
-      // Get network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-      setChainId(chainId)
-    } catch (err) {
-      console.error("Error updating wallet info:", err)
     }
-  }
+  }, [checkWalletConnection, handleChainChanged])
 
   const connectWallet = async () => {
     if (typeof window.ethereum === "undefined") {
@@ -160,19 +165,16 @@ export function Navbar() {
       setIsConnecting(true)
       setError("")
       
-      // Request account access
       const accounts = await window.ethereum.request({ 
         method: 'eth_requestAccounts' 
-      })
+      }) as string[]
       
       const address = accounts[0]
       setWalletAddress(address)
       await updateWalletInfo(address)
 
-      // Listen for account changes
       window.ethereum.on('accountsChanged', (accounts: string[]) => {
         if (accounts.length === 0) {
-          // User disconnected wallet
           setWalletAddress("")
           setBalance("")
           setChainId("")
