@@ -1,175 +1,265 @@
 "use client"
-
-import React, { useState, ChangeEvent } from 'react'
-import { ArrowLeft, Upload } from 'lucide-react'
+import { useState, FormEvent } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, Plus, X } from 'lucide-react'
+import { Navbar } from '../../components/Navbar'
+
+interface JobFormData {
+  title: string;
+  description: string;
+  projectType: string;
+  skills: string[];
+  budget: string;
+  paymentMethod: string;
+}
+
+const initialFormData: JobFormData = {
+  title: '',
+  description: '',
+  projectType: 'Full-time',
+  skills: [],
+  budget: '',
+  paymentMethod: 'Crypto'
+}
 
 export default function PostJobPage() {
-  const [formData, setFormData] = useState({
-    skill: '',
-    time: '',
-    budget: '',
-    notes: '',
-    file: null as File | null,
-  })
+  const [formData, setFormData] = useState<JobFormData>(initialFormData)
+  const [currentSkill, setCurrentSkill] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
   }
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({ ...prev, file: e.target.files![0] }))
+  const handleAddSkill = () => {
+    if (currentSkill.trim() && !formData.skills.includes(currentSkill.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, currentSkill.trim()]
+      }))
+      setCurrentSkill('')
     }
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }))
+  }
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Here you would typically send the form data to your backend
-    console.log('Job Posted:', formData)
-    // For now, we'll just log the data to the console
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          budget: parseFloat(formData.budget),
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create job post')
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while creating the job post')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Post a Job
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Find the perfect freelancer for your Web3 project
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto">
+          <header className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Post a Job</h1>
+            <p className="text-gray-600">Fill in the details below to create a new job posting.</p>
+          </header>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-8 bg-white shadow-lg rounded-lg p-8">
             <div>
-              <label htmlFor="skill" className="block text-sm font-medium text-gray-700">
-                Required Skill
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                Job Title
               </label>
-              <div className="mt-1">
-                <input
-                  id="skill"
-                  name="skill"
-                  type="text"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={formData.skill}
-                  onChange={handleChange}
-                  placeholder="e.g. Solidity Development, Web3 Integration"
-                />
-              </div>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.title}
+                onChange={handleInputChange}
+              />
             </div>
 
             <div>
-              <label htmlFor="time" className="block text-sm font-medium text-gray-700">
-                Estimated Time
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
               </label>
-              <div className="mt-1">
+              <textarea
+                id="description"
+                name="description"
+                rows={6}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="projectType" className="block text-sm font-medium text-gray-700 mb-1">
+                  Project Type
+                </label>
                 <select
-                  id="time"
-                  name="time"
+                  id="projectType"
+                  name="projectType"
                   required
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={formData.time}
-                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={formData.projectType}
+                  onChange={handleInputChange}
                 >
-                  <option value="">Select time frame</option>
-                  <option value="Less than 1 week">Less than 1 week</option>
-                  <option value="1-2 weeks">1-2 weeks</option>
-                  <option value="2-4 weeks">2-4 weeks</option>
-                  <option value="1-3 months">1-3 months</option>
-                  <option value="3-6 months">3-6 months</option>
-                  <option value="6+ months">6+ months</option>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="One-time">One-time</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={formData.paymentMethod}
+                  onChange={handleInputChange}
+                >
+                  <option value="Crypto">Cryptocurrency</option>
+                  <option value="Fiat">Fiat Currency</option>
+                  <option value="Hybrid">Hybrid Payment</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
-                Budget (in ETH)
+              <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
+                Required Skills
               </label>
-              <div className="mt-1">
+              <div className="flex">
                 <input
+                  type="text"
+                  id="skills"
+                  value={currentSkill}
+                  onChange={(e) => setCurrentSkill(e.target.value)}
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSkill}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {formData.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 focus:outline-none"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-1">
+                Budget
+              </label>
+              <div className="relative mt-1 rounded-md shadow-sm">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span className="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <input
+                  type="number"
                   id="budget"
                   name="budget"
-                  type="number"
-                  step="0.01"
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  min="0"
+                  step="0.01"
+                  className="w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={formData.budget}
-                  onChange={handleChange}
-                  placeholder="e.g. 0.5"
+                  onChange={handleInputChange}
                 />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                Key Notes
-              </label>
-              <div className="mt-1">
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={4}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Describe your project requirements, goals, and any specific details"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Upload File
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="file-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                    >
-                      <span>Upload a file</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    PNG, JPG, PDF up to 10MB
-                  </p>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <span className="text-gray-500 sm:text-sm">USD</span>
                 </div>
               </div>
-              {formData.file && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Selected file: {formData.file.name}
-                </p>
-              )}
             </div>
 
-            <div>
+            {error && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex">
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className="px-6 py-3 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Post Job
+                {isLoading ? 'Creating...' : 'Create Job Post'}
               </button>
             </div>
           </form>
         </div>
-      </div>
+      </main>
 
-      <div className="mt-8 text-center">
-        <Link href="/" className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center justify-center">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to home
-        </Link>
-      </div>
+      <footer className="bg-white shadow mt-12">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <p className="text-gray-500 text-sm">&copy; 2024 Gig Node. All rights reserved.</p>
+            <Link href="/" className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to home
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

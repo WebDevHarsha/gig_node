@@ -1,6 +1,6 @@
 "use strict";
-import connect from "@/lib/db";
-import User from "@/lib/models/user";
+import connect from "../../../../lib/db";
+import User from "../../../../lib/models/user";
 import { Types } from "mongoose";
 import { NextResponse } from "next/server";
 
