@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState } from "react"
 import { Eye, EyeOff, LogIn, UserPlus, BookOpen, Pencil } from "lucide-react"
-import { Navbar } from "@/components/Navbar"
+import { Navbar } from "../../components/Navbar"
 
 
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(" ")

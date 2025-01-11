@@ -88,7 +88,6 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 const navItems = [
   { name: "Find Work", href: "/find-work" },
   { name: "Post a Job", href: "/post-job" },
-  { name: "Talents", href: "/talents" },
   { name: "About", href: "/about" },
 ]
 
