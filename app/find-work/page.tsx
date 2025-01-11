@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Briefcase, DollarSign, Clock, X } from 'lucide-react'
+import { ArrowLeft, Briefcase, DollarSign, X } from 'lucide-react'
 import { Navbar } from '../../components/Navbar';
 
 interface Job {
@@ -209,7 +209,7 @@ export default function JobsListingPage() {
                       onClick={() => setSelectedJob(null)}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
                     >
-                      Close
+                      Accept
                     </button>
                   </div>
                 </div>

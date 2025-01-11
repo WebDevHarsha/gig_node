@@ -8,14 +8,15 @@ interface EthereumRequest {
 interface WindowWithEthereum {
   ethereum?: {
     request: (args: EthereumRequest) => Promise<unknown>;
-    on: (event: string, handler: (...args: any[]) => void) => void;
-    removeListener: (event: string, handler: (...args: any[]) => void) => void;
+    on: (event: string, handler: (...args: unknown[]) => void) => void;
+    removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
   };
 }
 
 declare global {
   interface Window extends WindowWithEthereum {}
 }
+
 
 import * as React from "react"
 import Link from "next/link"
@@ -119,7 +120,8 @@ export function Navbar() {
     }
   }, [])
 
-  const handleChainChanged = useCallback(async (newChain: string) => {
+  const handleChainChanged = useCallback(async (...args: unknown[]) => {
+    const newChain = args[0] as string
     setChainId(newChain)
     if (walletAddress) {
       await updateWalletInfo(walletAddress)
@@ -172,7 +174,8 @@ export function Navbar() {
       setWalletAddress(address)
       await updateWalletInfo(address)
 
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+      window.ethereum.on('accountsChanged', (...args: unknown[]) => {
+        const accounts = args[0] as string[]
         if (accounts.length === 0) {
           setWalletAddress("")
           setBalance("")
